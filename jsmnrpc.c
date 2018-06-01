@@ -29,6 +29,8 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <stdint.h>
+
 #include "jsmnrpc.h"
 
 
@@ -65,12 +67,12 @@ enum jsmnrpc_key_ids
 
 const char* jsmnrpc_keys[] =
 {
-  { "jsonrpc" },
-  { "method" },
-  { "params" },
-  { "id" },
-  { "result" },
-  { "error" },
+  "jsonrpc",
+  "method",
+  "params",
+  "id",
+  "result",
+  "error",
 };
 
 /* Private function declarations ------------------------------------------------------- */
@@ -91,13 +93,13 @@ void jsmnrpc_init(jsmnrpc_instance_t* self, jsmnrpc_handler_t* table_for_handler
   }
 }
 
-void jsmnrpc_register_handler(jsmnrpc_instance_t* self, const char* fcn_name, jsmnrpc_handler_callback_t handler)
+void jsmnrpc_register_handler(jsmnrpc_instance_t* self, const char* handler_name, jsmnrpc_handler_callback_t handler)
 {
   if (self->num_of_handlers < self->max_num_of_handlers)
   {
-    if (fcn_name && handler)
+    if (handler_name && handler)
     {
-      self->handlers[self->num_of_handlers].handler_name = fcn_name;
+      self->handlers[self->num_of_handlers].handler_name = handler_name;
       self->handlers[self->num_of_handlers].handler = handler;
       self->num_of_handlers++;
     }
@@ -241,13 +243,13 @@ void jsmnrpc_handle_request(jsmnrpc_instance_t* self, jsmnrpc_data_t* request_da
 
   if (root_token->type == JSMN_ARRAY)
   {
-    append_str_with_len(&request_data->response, "[", -1);
+    append_str_with_len(&request_data->response, "[", SIZE_MAX);
     for (int i = 1; i < tokens->length; ++i) {
       if (tokens->data[i].parent == root_token_id) {
         jsmnrpc_handle_request_single(self, &request_info, i);
       }
     }
-    append_str_with_len(&request_data->response, "]", -1);
+    append_str_with_len(&request_data->response, "]", SIZE_MAX);
   }
   else
   {
@@ -277,17 +279,17 @@ bool jsmnrpc_create_result_prefix(jsmnrpc_request_info_t* info)
     }
     if (info->info_flags & jsmnrpc_request_is_rpc_20)
     {
-      append_str_with_len(response, response_20_prefix, -1);
+      append_str_with_len(response, response_20_prefix, SIZE_MAX);
     }
     else
     {
-      append_str_with_len(response, response_1x_prefix, -1);
-      append_str_with_len(response, "\"error\": null", -1);
+      append_str_with_len(response, response_1x_prefix, SIZE_MAX);
+      append_str_with_len(response, "\"error\": null", SIZE_MAX);
     }
 
     if (info->id_value_token >= 0)
     {
-      append_str_with_len(response, ", \"id\": ", -1);
+      append_str_with_len(response, ", \"id\": ", SIZE_MAX);
       append_str(response, jsmnrpc_get_string(&info->data->tokens, info->id_value_token));
     }
     return true;
@@ -299,9 +301,9 @@ void jsmnrpc_create_result(const char* result_str, jsmnrpc_request_info_t* info)
 {
   if (jsmnrpc_create_result_prefix(info)) {
     jsmnrpc_string_t *response = &info->data->response;
-    append_str_with_len(response, ", \"result\": ", -1);
-    append_str_with_len(response, result_str, -1);
-    append_str_with_len(response, "}", -1);
+    append_str_with_len(response, ", \"result\": ", SIZE_MAX);
+    append_str_with_len(response, result_str, SIZE_MAX);
+    append_str_with_len(response, "}", SIZE_MAX);
   }
 }
 
@@ -344,32 +346,32 @@ void jsmnrpc_create_error(int err, const char* err_msg, jsmnrpc_request_info_t* 
 
     if (info->info_flags & jsmnrpc_request_is_rpc_20)
     {
-      append_str_with_len(response, response_20_prefix, -1);
-      append_str_with_len(response, ", ", -1);
+      append_str_with_len(response, response_20_prefix, SIZE_MAX);
+      append_str_with_len(response, ", ", SIZE_MAX);
     }
     else
     {
-      append_str_with_len(response, response_1x_prefix, -1);
+      append_str_with_len(response, response_1x_prefix, SIZE_MAX);
     }
 
-    append_str_with_len(response, "\"error\": {\"code\": ", -1);
-    append_str_with_len(response, err_code, -1);
-    append_str_with_len(response, ", \"message\": \"", -1);
-    append_str_with_len(response, err_msg, -1);
-    append_str_with_len(response, "\"}", -1);
+    append_str_with_len(response, "\"error\": {\"code\": ", SIZE_MAX);
+    append_str_with_len(response, err_code, SIZE_MAX);
+    append_str_with_len(response, ", \"message\": \"", SIZE_MAX);
+    append_str_with_len(response, err_msg, SIZE_MAX);
+    append_str_with_len(response, "\"}", SIZE_MAX);
     if (info->id_value_token >= 0 || err == jsmnrpc_err_invalid_request)
     {
-      append_str_with_len(response, ", \"id\": ", -1);
+      append_str_with_len(response, ", \"id\": ", SIZE_MAX);
       if (info->id_value_token >= 0)
       {
         append_str(response, jsmnrpc_get_string(&info->data->tokens, info->id_value_token));
       }
       else
       {
-        append_str_with_len(response, "null", -1);
+        append_str_with_len(response, "null", SIZE_MAX);
       }
     }
-    append_str_with_len(response, "}", -1);
+    append_str_with_len(response, "}", SIZE_MAX);
   }
 }
 
@@ -466,7 +468,7 @@ jsmnrpc_string_t jsmnrpc_get_string(jsmnrpc_token_list_t *tokens, int token) {
 void append_str_with_len(jsmnrpc_string_t *str, const char* from, size_t len)
 {
   size_t saved_len = str->length;
-  if (len == (size_t)(-1)) {
+  if (len == SIZE_MAX) {
     len = str_len(from);
   }
   str->length += len;

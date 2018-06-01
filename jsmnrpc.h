@@ -150,10 +150,10 @@ bool jsmnrpc_parse(jsmnrpc_token_list_t* tokens, jsmnrpc_string_t *str);
 /**
 * @brief Registers a new handler.
 * @param self pointer to the jsmnrpc_instance_t object.
-* @param fcn_name name of the function (as it appears in RCP request).
+* @param handler_name name of the function (as it appears in RCP request).
 * @param handler pointer to the function handler (function of jsmnrpc_handler_fcn type).
 */
-void jsmnrpc_register_handler(jsmnrpc_instance_t* self, const char* fcn_name, jsmnrpc_handler_callback_t handler);
+void jsmnrpc_register_handler(jsmnrpc_instance_t* self, const char* handler_name, jsmnrpc_handler_callback_t handler);
 
 
 /**
