@@ -18,10 +18,10 @@
     <ClCompile Include="jsmn.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="json_rpc_tiny.c">
+    <ClCompile Include="z_example.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="z_example.cpp">
+    <ClCompile Include="jsmnrpc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -29,7 +29,7 @@
     <ClInclude Include="jsmn.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="json_rpc_tiny.h">
+    <ClInclude Include="jsmnrpc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

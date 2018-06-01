@@ -20,12 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="jsmn.c" />
-    <ClCompile Include="json_rpc_tiny.c" />
+    <ClCompile Include="jsmnrpc.c" />
     <ClCompile Include="z_example.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="jsmn.h" />
-    <ClInclude Include="json_rpc_tiny.h" />
+    <ClInclude Include="jsmnrpc.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
