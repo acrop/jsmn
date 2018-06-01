@@ -2,7 +2,9 @@
 #define __JSMN_H_
 
 #include <stddef.h>
-
+#ifndef JSMN_PARENT_LINKS
+#define JSMN_PARENT_LINKS 1
+#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -42,7 +44,7 @@ typedef struct {
 	int start;
 	int end;
 	int size;
-#ifdef JSMN_PARENT_LINKS
+#if JSMN_PARENT_LINKS
 	int parent;
 #endif
 } jsmntok_t;
