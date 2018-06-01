@@ -1,0 +1,213 @@
+
+0:
+--> {"jsonrpc": "2.0", "method": "getTimeDate", "params": none, "id": 10}
+<-- {"jsonrpc": "2.0", "result": "2018-6-1", "id": 10}
+result was: 2018-6-1
+
+
+1:
+--> {"jsonrpc": "2.0", "method": "helloWorld", "params": ["Hello World"], "id": 11}
+<-- {"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": 11}
+
+
+2:
+--> {"method": "search", "params": [{"last_name": "Python", "age": 26}], "id": 22}
+<-- {"result": "Monty", "error": none, "id": 22}
+result was: Monty
+
+
+3:
+--> {"jsonrpc": "2.0", "method": "search", "params": [{"last_n": "Python"}], "id": 43}
+<-- {"jsonrpc": "2.0", "error": {"code": -32602, "message": "Invalid params"}, "id": 43}
+
+
+4:
+--> {"jsonrpc": "2.0", "method": "search", "params": [{"last_name": "Doe"}], "id": 54}
+<-- {"jsonrpc": "2.0", "error": {"code": -32602, "message": "Invalid params"}, "id": 54}
+
+
+5:
+--> {"jsonrpc": "2.0", "thod": "search",
+<-- {"error": {"code": -32600, "message": "Invalid Request"}, "id": none}
+
+
+6:
+--> {"method": "err_example",  "params": [], "id": 36}
+<-- {"error": {"name": "some_error", "message": "SOmething went wrong.."}, "id": 36}
+
+
+7:
+--> {"jsonrpc": "2.0", "method": "use_param", "params": [], "id": 37s}
+<-- {"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": 37s}
+
+
+8:
+--> {"jsonrpc": "2.0", "method": "calculate", "params": [{"first": 128, "second": 32, "op": "+"}], "id": 38}
+<-- {"jsonrpc": "2.0", "result": {"operation": "+", "res": 160}, "id": 38}
+result was: {"operation": "+", "res": 160}
+ result [0]: +
+ result [1]: 160
+
+
+9:
+--> {"jsonrpc": "2.0", "method": "calculate", "params": [{"second": 0x10, "first": 0x2, "op": "*"}], "id": 39}
+<-- {"jsonrpc": "2.0", "result": {"operation": "*", "res": 32}, "id": 39}
+result was: {"operation": "*", "res": 32}
+ result [0]: *
+ result [1]: 32
+
+
+10:
+--> {"jsonrpc": "2.0", "method": "calculate", "params": [{"first": 128, "second": 32, "op": "+"}], "id": 40}
+<-- {"jsonrpc": "2.0", "result": {"operation": "+", "res": 160}, "id": 40}
+result was: {"operation": "+", "res": 160}
+ result [0]: +
+ result [1]: 160
+
+
+11:
+--> {"jsonrpc": "2.0", "method": "ordered_params", "params": [128, "the string", 0x100], "id": 41}
+<-- {"jsonrpc": "2.0", "result": {"first": 128, "second": "the string", "third": 256}, "id": 41}
+result was: {"first": 128, "second": "the string", "third": 256}
+ result [0]: 128
+ result [1]: the string
+ result [2]: 256
+
+ ===> called handleMessage(["user3", "sorry, gotta go now, ttyl"], notif: 1)
+
+
+12:
+--> {"method": "handleMessage", "params": ["user3", "sorry, gotta go now, ttyl"], "id": null}
+<--
+
+
+13:
+--> {"jsonrpc": "2.0", "method": "calculate", "params": [{"first": -0x17, "second": -17, "op": "+"}], "id": 43}
+<-- {"jsonrpc": "2.0", "result": {"operation": "+", "res": -40}, "id": 43}
+result was: {"operation": "+", "res": -40}
+ result [0]: +
+ result [1]: -40
+
+
+14:
+--> {"jsonrpc": "2.0", "method": "calculate", "params": [{"first": -0x32, "second": -055, "op": "-"}], "id": 44}
+<-- {"jsonrpc": "2.0", "result": {"operation": "-", "res": -5}, "id": 44}
+result was: {"operation": "-", "res": -5}
+ result [0]: -
+ result [1]: -5
+
+
+15:
+--> {"jsonrpc": "2.0", "method": "send_back", "params": [{"what": "{[{abcde}]}"}], "id": 45}
+<-- {"jsonrpc": "2.0", "result": {"res": "{[{abcde}]}"}, "id": 45}
+result was: {"res": "{[{abcde}]}"}
+ result [0]: {[{abcde}]}
+
+
+16:
+--> {"jsonrpc": "2.0", "thod": "search".. }
+<-- {"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid Request"}, "id": none}
+
+
+
+ ==== extracting_json_examples ====
+
+printing all members of:
+ {"jsonrpc": "2.0", "method": "getTimeDate", "params": none, "id": 123}
+
+=> inside next sub-obj
+next member is: -><- value (at: 0, len: 70): >{"jsonrpc": "2.0", "method": "getTimeDate", "params": none, "id": 123}<
+=> inside next sub-obj
+next member is: ->jsonrpc<- value (at: 13, len: 3): >2.0<
+next member is: ->method<- value (at: 30, len: 11): >getTimeDate<
+next member is: ->params<- value (at: 54, len: 4): >none<
+next member is: ->id<- value (at: 66, len: 3): >123<
+<= end of next sub-obj
+<= end of next sub-obj
+printing all members of:
+ {[{"first": 128, "second": 32, "op": "+"}, {"jsonrpc": "2.0", "method": "getTimeDate"}]}
+
+=> inside next sub-obj
+next member is: -><- value (at: 0, len: 88): >{[{"first": 128, "second": 32, "op": "+"}, {"jsonrpc": "2.0", "method": "getTimeDate"}]}<
+=> inside next sub-obj
+next member is: -><- value (at: 1, len: 86): >[{"first": 128, "second": 32, "op": "+"}, {"jsonrpc": "2.0", "method": "getTimeDate"}]<
+=> inside next sub-obj
+next member is: -><- value (at: 2, len: 39): >{"first": 128, "second": 32, "op": "+"}<
+=> inside next sub-obj
+next member is: ->first<- value (at: 12, len: 3): >128<
+next member is: ->second<- value (at: 27, len: 2): >32<
+next member is: ->op<- value (at: 38, len: 1): >+<
+<= end of next sub-obj
+next member is: -><- value (at: 43, len: 43): >{"jsonrpc": "2.0", "method": "getTimeDate"}<
+=> inside next sub-obj
+next member is: ->jsonrpc<- value (at: 56, len: 3): >2.0<
+next member is: ->method<- value (at: 73, len: 11): >getTimeDate<
+<= end of next sub-obj
+<= end of next sub-obj
+<= end of next sub-obj
+<= end of next sub-obj
+
+---
+printing all members of:
+ {"jsonrpc": "2.0", "method": "ordered_params", "params": [128, "the string", 0x100], "id": 40}
+
+=> inside next sub-obj
+next member is: -><- value (at: 0, len: 94): >{"jsonrpc": "2.0", "method": "ordered_params", "params": [128, "the string", 0x100], "id": 40}<
+=> inside next sub-obj
+next member is: ->jsonrpc<- value (at: 13, len: 3): >2.0<
+next member is: ->method<- value (at: 30, len: 14): >ordered_params<
+next member is: ->params<- value (at: 57, len: 26): >[128, "the string", 0x100]<
+=> inside next sub-obj
+next member is: -><- value (at: 58, len: 3): >128<
+next member is: -><- value (at: 64, len: 10): >the string<
+next member is: -><- value (at: 77, len: 5): >0x100<
+<= end of next sub-obj
+next member is: ->id<- value (at: 91, len: 2): >40<
+<= end of next sub-obj
+<= end of next sub-obj
+
+
+ ==== finding members by name ====
+jsonrpc (found by name): 2.0
+params (found by name): [128, "the string", 0x100]
+method (found by name): ordered_params
+id (found by name): 40
+result (found by name): {"operation": "*", "res": 32}
+operation (found by name): *
+res (found by name): 32
+operation (found by name): *
+
+
+ ==== finding members by number (order) ====
+JSON object:
+{{"first": 128, "second": 32, "op": "+"}, {"jsonrpc": "2.0", "method": "getTimeDate"}}
+
+ member #0: {"first": 128, "second": 32, "op": "+"}
+ member #1: {"jsonrpc": "2.0", "method": "getTimeDate"}
+
+
+JSON object:
+{"jsonrpc": "2.0", "method": "search", "params": [{"last_n": "Python"}], "id": 43}
+
+ member #0: 2.0
+ member #1: search
+ member #2: [{"last_n": "Python"}]
+ member #3: 43
+
+
+ ==== extracting_json_examples (end) ====
+
+=====> none
+batch request:
+--> [{"jsonrpc": "2.0", "method": "calculate", "params": [{"first": 128, "second": 32, "op": "+"}], "id": 38},{"jsonrpc": "2.0", "method": "calculate", "params": [{"second": 0x10, "first": 0x2, "op": "*"}], "id": 39}]
+
+<-- [{"jsonrpc": "2.0", "result": {"operation": "+", "res": 160}, "id": 38}, {"jsonrpc": "2.0", "result": {"operation": "*", "res": 32}, "id": 39}]
+
+batch request:
+--> [,233]
+
+<-- [{"error": {"code": -32600, "message": "Invalid Request"}, "id": none}, {"error": {"code": -32600, "message": "Invalid Request"}, "id": none}]
+
+===== ALL TESTS PASSED =====
+
+请按任意键继续. . .

@@ -5,6 +5,7 @@
 #ifndef JSMN_PARENT_LINKS
 #define JSMN_PARENT_LINKS 1
 #endif
+#define JSMN_STRICT
 #ifdef __cplusplus
 extern "C" {
 #endif
