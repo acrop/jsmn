@@ -450,10 +450,11 @@ void print_all_members_of_object(const std::string& input, int curr_pos, int obj
 // --------------- TEST CODE -----------------------------------
 
 #include <stdexcept>
-#define TEST_COND_(_cond_, ...) ({ if(!(_cond_)) { \
+#define TEST_COND_(_cond_, ...) \
+{ if(!(_cond_)) { \
                                   std::stringstream s; s << "test error: assertion at line: " << __LINE__ << "\n"; \
                                   s << " " << #_cond_ << "\n"; \
-                                  throw std::runtime_error(s.str()); } })
+                                  throw std::runtime_error(s.str()); } }
 
 // helper method: executes JSON rpc given example number and returns the response
 const char*  handle_request_for_example(int example_number, json_rpc_data_t& req_data, json_rpc_instance& rpc)

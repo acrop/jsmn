@@ -18,10 +18,10 @@
     <ClCompile Include="jsmn.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="json_rpc_tiny.c">
+    <ClCompile Include="z_example.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="z_example.cpp">
+    <ClCompile Include="json_rpc_tiny.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
