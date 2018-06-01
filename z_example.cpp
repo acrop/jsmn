@@ -15,12 +15,13 @@
 #include <iostream>
 #include <sstream>
 #include <ctime>
+#include <vector>
 
 #include <stdio.h>
 
 void rpc_handling_examples(char** argv);
 void extracting_json_examples();
-void print_all_members_of_object(const std::string& input, int curr_pos, int object_len);
+void print_all_members_of_object(const std::string& input, int curr_pos, size_t object_len);
 int run_tests();
 
 
@@ -51,11 +52,9 @@ void search(jsmnrpc_request_info_t* info)
 
   // for named params- there are 'helper' functions to find and extract parameters by their name
   // (can be useful as this allows finding them regardless of their order in the original request.
-  int param_0_token = jsmnrpc_get_array_member(tokens, 0, info->params_value_token);
-  int last_name_token = jsmnrpc_get_object_member(tokens, "last_name", param_0_token);
-  int last_name_value_token = jsmnrpc_get_object_member(tokens, NULL, last_name_token);
-  int age_token = jsmnrpc_get_object_member(tokens, "age", param_0_token);
-  int age_value_token = jsmnrpc_get_object_member(tokens, NULL, age_token);
+  int param_0_token = jsmnrpc_get_value(tokens, info->params_value_token, 0,  NULL);
+  int last_name_value_token = jsmnrpc_get_value(tokens, param_0_token, 0, "last_name");
+  int age_value_token = jsmnrpc_get_value(tokens, param_0_token, 0, "age");
   jsmnrpc_string_t last_name = jsmnrpc_get_string(tokens, last_name_value_token);
   jsmnrpc_string_t age = jsmnrpc_get_string(tokens, age_value_token);
   if (last_name.data && age.data && jsmnrpc_get_token_type(tokens, age_value_token) == JSMN_PRIMITIVE)
@@ -426,7 +425,7 @@ void extracting_json_examples()
 }
 
 // example function to show how to print recursively all sub-objects / lists within a JSON object
-void print_all_members_of_object(const std::string& input, int curr_pos, int object_len)
+void print_all_members_of_object(const std::string& input, int curr_pos, size_t object_len)
 {
 #if 0
   json_token_info info;
@@ -478,31 +477,41 @@ void handle_request_for_example(int example_number, jsmnrpc_data_t& req_data, js
   return jsmnrpc_handle_request(&rpc, &req_data);
 }
 
-
-template <typename ParamType>
-int extract_int_param(ParamType param_name_or_pos, const std::string& res_str)
+int extract_token_offset(jsmnrpc_token_list_t *tokens, int root_token, const char* name)
 {
-  int int_res = -1;
-#if 0
-  if (!json_extract_member_int(param_name_or_pos, &int_res, res_str.c_str(), res_str.length()))
-  {
-    std::stringstream err;
-    err << __FUNCTION__ << " error extracting param: " << param_name_or_pos;
-    err << " from: " << res_str << "\n";
-    throw std::runtime_error(err.str());
-  }
-#endif
-  return int_res;
+  return jsmnrpc_get_value(tokens, 0, -1, name);
+}
+
+int extract_token_offset(jsmnrpc_token_list_t *tokens, int root_token, int index)
+{
+  return jsmnrpc_get_value(tokens, 0, index, NULL);
 }
 
 template <typename ParamType>
 std::string extract_str_param(ParamType param_name_or_pos, const std::string& res_str)
 {
   int str_size = 0;
-#if 0
-  const char* str_res = json_extract_member_str(param_name_or_pos, &str_size, res_str.c_str(), res_str.length());
-#endif
-  return std::string(res_str, str_size);
+  std::vector<jsmntok_t> token_vector;
+  jsmnrpc_string_t str;
+  jsmnrpc_token_list_t tokens;
+  token_vector.resize(65536);
+  str.length = (int)res_str.size();
+  str.capacity = 0;
+  str.data = (char*)res_str.data();
+  tokens.data = token_vector.data();
+  tokens.capacity = (int)token_vector.size();
+  jsmnrpc_parse(&tokens, &str);
+  int result_offset = -1;
+  result_offset = extract_token_offset(&tokens, 0, param_name_or_pos);
+  jsmnrpc_string_t return_str = jsmnrpc_get_string(&tokens, result_offset);
+  return std::string(return_str.data, return_str.length);
+}
+
+template <typename ParamType>
+int extract_int_param(ParamType param_name_or_pos, const std::string& res_str)
+{
+  std::string result = extract_str_param(param_name_or_pos, res_str);
+  return atoi(result.c_str());
 }
 
 int run_tests()
@@ -532,10 +541,10 @@ int run_tests()
 
     handle_request_for_example(2, req_data, rpc);
     TEST_COND_(req_data.response.length > 2);
-    TEST_COND_(extract_str_param(0, res_str) == "Monty"); // "result": "Monty"
-    TEST_COND_(extract_str_param(1, res_str) == "none"); // "error": none
-    TEST_COND_(extract_str_param(2, res_str) == "22"); // "id": 22
-    TEST_COND_(extract_int_param(2, res_str) == 22); // "id": 22
+    TEST_COND_(extract_str_param("result", res_str) == "Monty"); // "result": "Monty"
+    TEST_COND_(extract_str_param("error", res_str) == "null"); // "error": null
+    TEST_COND_(extract_str_param("id", res_str) == "22"); // "id": 22
+    TEST_COND_(extract_int_param("id", res_str) == 22); // "id": 22
     TEST_COND_(extract_str_param(3, res_str) == ""); // not existing.
 
     handle_request_for_example(5, req_data, rpc);

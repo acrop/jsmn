@@ -41,8 +41,8 @@ extern "C" {
 
 typedef struct jsmnrpc_string {
   char* data;
-  int length;
-  int capacity;
+  size_t length;
+  size_t capacity;
 } jsmnrpc_string_t;
 
 typedef struct jsmnrpc_token_list {
@@ -74,8 +74,8 @@ typedef struct jsmnrpc_data
 typedef struct jsmnrpc_request_info
 {
   jsmnrpc_data_t *data;
-  uint32_t params_value_token;
-  uint32_t id_value_token;
+  int32_t params_value_token;
+  int32_t id_value_token;
   uint16_t info_flags;
 } jsmnrpc_request_info_t;
 
@@ -189,13 +189,33 @@ void jsmnrpc_create_result(const char* result_str, jsmnrpc_request_info_t* info)
 *        This function will either fill out the buffer with a valid error response, or null-terminate
 *        it at it's beginning for notification, so there is no need to check that in the handler.
 *        This allows handlers to be implemented the same way for requests and notifications.
-* @param error_code - one of json_20_errors. Error will be constructed as per jsmnrpc_ 2.0 definitions.
+* @param error_code - one of jsmnrpc_20_errors. Error will be constructed as per jsmnrpc_ 2.0 definitions.
+* @param error_msg - The user defined error message.
 * @param info pointer to the jsmnrpc_request_info_t structure that was passed to the handler.
 */
 void jsmnrpc_create_error(int err_code, const char* err_msg, jsmnrpc_request_info_t* info);
 
-int jsmnrpc_get_array_member(jsmnrpc_token_list_t *tokens, int index, int token_id);
-int jsmnrpc_get_object_member(jsmnrpc_token_list_t *tokens, const char*key, int token_id);
+/*
+* @breif Function to get JSON object's key of index-th children,
+*        through the key, we could be able retrieve the value correspond to the key
+* @param tokens - The jsmn parsed token list.
+* @param token_offset - The JSON node's offset in token list, the type of token must be JSMN_OBJECT
+* @param index - Which object key want to retrieve
+* @return The token offset id of the key
+*/
+int jsmnrpc_get_object_key(jsmnrpc_token_list_t *tokens, int token_offset, int index);
+
+/*
+* @breif Function to get JSON object's member value for key, or an object key's correspond value,
+*        or array's index-th value
+* @param tokens - The jsmn parsed token list.
+* @param token_offset - The JSON node's offset in tokens, the type of token maybe any one of jsmntype_t
+* @param index - The index of JSON array when token_offset's type is Array when type of token_offset are JSMN_ARRAY,
+         otherwise it's should be -1 
+* @param key - The key of JSON object when token_offset's type is JSMN_OBJECT, otherwise it's should be NULL
+* @return The value node's offset in token list(tokens).
+*/
+int jsmnrpc_get_value(jsmnrpc_token_list_t *tokens, int token_offset,  int index, const char*key);
 
 inline jsmntype_t jsmnrpc_get_token_type(jsmnrpc_token_list_t *tokens, int token_id) {
   if (token_id < 0) {
@@ -205,11 +225,12 @@ inline jsmntype_t jsmnrpc_get_token_type(jsmnrpc_token_list_t *tokens, int token
 }
 jsmnrpc_string_t jsmnrpc_get_string(jsmnrpc_token_list_t *tokens, int token);
 
-void append_str_with_len(jsmnrpc_string_t *str, const char* from, int len);
+void append_str_with_len(jsmnrpc_string_t *str, const char* from, size_t len);
 void append_str(jsmnrpc_string_t *str, jsmnrpc_string_t rpc_str);
 
-int str_are_equal(const char* first, int first_len, const char* second_zero_ended);
+int str_are_equal(const char* first, size_t first_len, const char* second_zero_ended);
 char* i_to_str(int i, char b[]);
+int str_to_i(const char* start, size_t length, int* result);
 int str_len(const char* str);
 
 #ifdef __cplusplus

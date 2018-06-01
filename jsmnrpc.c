@@ -120,23 +120,20 @@ static int jsmnrpc_get_handler_id(jsmnrpc_instance_t* table, const jsmnrpc_strin
 void jsmnrpc_handle_request_single(jsmnrpc_instance_t* self, jsmnrpc_request_info_t* request_info, int token_id)
 {
   jsmnrpc_token_list_t *tokens = &request_info->data->tokens;
-  int method_token = jsmnrpc_get_object_member(tokens, jsmnrpc_keys[jsmnrpc_key_method], token_id);
-  int jsonrpc_token = jsmnrpc_get_object_member(tokens, jsmnrpc_keys[jsmnrpc_key_jsonrpc], token_id);
-  int jsonrpc_value_token = jsmnrpc_get_object_member(tokens, NULL, jsonrpc_token);
-  int id_token = jsmnrpc_get_object_member(tokens, jsmnrpc_keys[jsmnrpc_key_id], token_id);
-  int params_token = jsmnrpc_get_object_member(tokens, jsmnrpc_keys[jsmnrpc_key_params], token_id);
-  request_info->id_value_token = jsmnrpc_get_object_member(tokens, NULL, id_token);
-  request_info->params_value_token = jsmnrpc_get_object_member(tokens, NULL, params_token);
+  int method_value_token = jsmnrpc_get_value(tokens, token_id, -1, jsmnrpc_keys[jsmnrpc_key_method]);
+  int jsonrpc_value_token = jsmnrpc_get_value(tokens, token_id, -1, jsmnrpc_keys[jsmnrpc_key_jsonrpc]);
+  request_info->params_value_token = jsmnrpc_get_value(tokens, token_id, -1, jsmnrpc_keys[jsmnrpc_key_params]);
+  request_info->id_value_token = jsmnrpc_get_value(tokens, token_id, -1, jsmnrpc_keys[jsmnrpc_key_id]);
   request_info->info_flags = 0;
 
-  if (jsonrpc_token > 0) {
+  if (jsonrpc_value_token > 0) {
     jsmnrpc_string_t str = jsmnrpc_get_string(tokens, jsonrpc_value_token);
     if (str_are_equal(str.data, str.length, "2.0")) {
       request_info->info_flags |= jsmnrpc_request_is_rpc_20;
     }
   }
 
-  if (id_token < 0)
+  if (request_info->id_value_token < 0)
   {
     /* For rpc client 1.0, id must be null for notification, so when id is not exist, treat as error */
     if (!(request_info->info_flags & jsmnrpc_request_is_rpc_20)) {
@@ -168,7 +165,7 @@ void jsmnrpc_handle_request_single(jsmnrpc_instance_t* self, jsmnrpc_request_inf
     }
 
     /* if id value is not primitive or string, then it's an error */
-    if (id_value_token ==NULL || (id_value_token->type != JSMN_PRIMITIVE && id_value_token->type != JSMN_STRING)) {
+    if (id_value_token == NULL || (id_value_token->type != JSMN_PRIMITIVE && id_value_token->type != JSMN_STRING)) {
       jsmnrpc_create_error(jsmnrpc_err_invalid_request, NULL, request_info);
       return;
     }
@@ -182,7 +179,6 @@ void jsmnrpc_handle_request_single(jsmnrpc_instance_t* self, jsmnrpc_request_inf
   }
 
   {
-    int method_value_token = jsmnrpc_get_object_member(tokens, NULL, method_token);
     if (method_value_token >= 0 && tokens->data[method_value_token].type == JSMN_STRING) {
       jsmnrpc_string_t str = jsmnrpc_get_string(tokens, method_value_token);
       int handler_id = jsmnrpc_get_handler_id(self, str);
@@ -377,19 +373,16 @@ void jsmnrpc_create_error(int err, const char* err_msg, jsmnrpc_request_info_t* 
   }
 }
 
-int jsmnrpc_get_array_member(jsmnrpc_token_list_t *tokens, int index, int token_id)
+int jsmnrpc_get_object_key(jsmnrpc_token_list_t *tokens, int token_offset, int index)
 {
   int result = -1;
   int offset = 0;
-  if (token_id < 0) {
+  if (token_offset < 0 || tokens->data[token_offset].type != JSMN_OBJECT) {
     return -1;
   }
-  if (tokens->data[token_id].type != JSMN_ARRAY) {
-    return -1;
-  }
-  for (int i = token_id + 1; i < tokens->length; ++i) {
+  for (int i = token_offset + 1; i < tokens->length; ++i) {
     jsmntok_t *token = tokens->data + i;
-    if (token->parent == token_id) {
+    if (token->parent == token_offset) {
       if (offset == index) {
         result = i;
         break;
@@ -400,19 +393,57 @@ int jsmnrpc_get_array_member(jsmnrpc_token_list_t *tokens, int index, int token_
   return result;
 }
 
-int jsmnrpc_get_object_member(jsmnrpc_token_list_t *tokens, const char*key, int token_id)
+int jsmnrpc_get_value(jsmnrpc_token_list_t *tokens, int token_offset, int index, const char*key)
 {
   int result = -1;
-  if (token_id < 0) {
-    return -1;
-  }
-  for (int i = token_id + 1; i < tokens->length; ++i) {
-    jsmntok_t *token = tokens->data + i;
-    if (token->parent == token_id) {
-      jsmnrpc_string_t str = jsmnrpc_get_string(tokens, i);
-      if (key == NULL || str_are_equal(str.data, str.length, key)) {
-        result = i;
-        break;
+  if (token_offset >= 0)
+  {
+    jsmntok_t *node = tokens->data + token_offset;
+    if (node->type == JSMN_ARRAY && index < 0)
+    {
+      result = -1;
+    }
+    else if (node->type == JSMN_OBJECT && key == NULL)
+    {
+      result = -1;
+    }
+    else if (node->type != JSMN_ARRAY && node->type != JSMN_OBJECT)
+    {
+      if ((token_offset + 1 < tokens->length) && tokens->data[token_offset + 1].parent == token_offset) {
+        result = token_offset + 1;
+      }
+      else
+      {
+        result = token_offset;
+      }
+    }
+    else
+    {
+      int offset = 0;
+      for (int i = token_offset + 1; i < tokens->length; ++i) {
+        jsmntok_t *token = tokens->data + i;
+        if (token->parent == token_offset) {
+          jsmnrpc_string_t str = jsmnrpc_get_string(tokens, i);
+          if (node->type == JSMN_OBJECT) {
+            if (str_are_equal(str.data, str.length, key)) {
+              result = i + 1;
+              /* Protecting result */
+              if (result >= tokens->length || tokens->data[result].parent != i) {
+                result = -1;
+              }
+              break;
+            }
+          }
+          else if (node->type == JSMN_ARRAY)
+          {
+            if (offset == index)
+            {
+              result = i;
+              break;
+            }
+            ++offset;
+          }
+        }
       }
     }
   }
@@ -432,10 +463,10 @@ jsmnrpc_string_t jsmnrpc_get_string(jsmnrpc_token_list_t *tokens, int token) {
   return result;
 }
 
-void append_str_with_len(jsmnrpc_string_t *str, const char* from, int len)
+void append_str_with_len(jsmnrpc_string_t *str, const char* from, size_t len)
 {
-  int saved_len = str->length;
-  if (len < 0) {
+  size_t saved_len = str->length;
+  if (len == (size_t)(-1)) {
     len = str_len(from);
   }
   str->length += len;
@@ -451,7 +482,7 @@ void append_str(jsmnrpc_string_t *str, jsmnrpc_string_t rpc_str)
   append_str_with_len(str, rpc_str.data, rpc_str.length);
 }
 
-int str_are_equal(const char* first, int first_len, const char* second_zero_ended)
+int str_are_equal(const char* first, size_t first_len, const char* second_zero_ended)
 {
   int are_equal = 0;
   while (*second_zero_ended != 0 &&  // not the end of string?
@@ -490,6 +521,83 @@ char* i_to_str(int i, char b[])
     i = i / 10;
   } while (i);
   return b;
+}
+
+static int int_val(char symbol, int* result)
+{
+  int value_ok = 1;
+  int correct_by = 0;
+
+  if ((symbol >= '0') && (symbol <= '9'))
+  {
+    correct_by = '0';
+  }
+  else if ((symbol >= 'A') && (symbol <= 'F'))
+  {
+    correct_by = ('A' - 10);
+  }
+  else if ((symbol >= 'a') && (symbol <= 'f'))
+  {
+    correct_by = ('a' - 10);
+  }
+  else
+  {
+    value_ok = 0;
+  }
+
+  *result = symbol - correct_by;
+  return value_ok;
+}
+
+int str_to_i(const char* start, size_t length, int* result)
+{
+  int extracted_ok = 1;
+  int base = 10;
+  int value = 0;
+  int sign = 1;
+  int val_start = 0;
+  int i = 0;
+
+  if (length > 0 && start[0] == '-')
+  {
+    sign = -1;
+    val_start++;
+  }
+
+  // find base: 0x: hex(16), 0:octal(8)
+  if (length > val_start + 2 &&
+    start[val_start] == '0')
+  {
+    if (start[val_start + 1] == 'x')
+    {
+      base = 16;
+      val_start += 2;
+    }
+    else
+    {
+      base = 8;
+      val_start += 1;
+    }
+  }
+
+  *result = 0;
+  for (i = val_start; i < length; i++)
+  {
+    if (i > val_start)
+    {
+      *result *= base;
+    }
+
+    if (!int_val(start[i], &value) ||
+      value > base)
+    {
+      extracted_ok = 0;
+      break;
+    }
+    *result += value;
+  }
+  *result *= sign;
+  return extracted_ok;
 }
 
 int str_len(const char* str)
