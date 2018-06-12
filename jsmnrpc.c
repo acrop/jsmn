@@ -230,39 +230,38 @@ void jsmnrpc_handle_request(jsmnrpc_instance_t* self, jsmnrpc_data_t* request_da
   request_info.params_value_token = -1;
   request_info.info_flags = 0;
 
-  if (!jsmnrpc_parse(tokens, request)) {
-    jsmnrpc_create_error(jsmnrpc_err_parse_error, NULL, &request_info);
-    request_data->info_flags = request_info.info_flags;
-    return;
-  }
-
-  if (root_token->type != JSMN_ARRAY && root_token->type != JSMN_OBJECT) {
-    jsmnrpc_create_error(jsmnrpc_err_invalid_request, NULL, &request_info);
-    request_data->info_flags = request_info.info_flags;
-    return;
-  }
-
-  if (root_token->type == JSMN_ARRAY && root_token->size < 1) {
-    jsmnrpc_create_error(jsmnrpc_err_invalid_request, NULL, &request_info);
-    request_data->info_flags = request_info.info_flags;
-    return;
-  }
-
-  if (root_token->type == JSMN_ARRAY)
-  {
-    append_str_with_len(&request_data->response, "[", SIZE_MAX);
-    for (int i = 1; i < tokens->length; ++i) {
-      if (tokens->data[i].parent == root_token_id) {
-        jsmnrpc_handle_request_single(self, &request_info, i);
-      }
+  do {
+    if (!jsmnrpc_parse(tokens, request)) {
+      jsmnrpc_create_error(jsmnrpc_err_parse_error, NULL, &request_info);
+      break;
     }
-    append_str_with_len(&request_data->response, "]", SIZE_MAX);
-    request_info.info_flags = jsmnrpc_response_is_array;
-  }
-  else
-  {
-    jsmnrpc_handle_request_single(self, &request_info, 0);
-  }
+
+    if (root_token->type != JSMN_ARRAY && root_token->type != JSMN_OBJECT) {
+      jsmnrpc_create_error(jsmnrpc_err_invalid_request, NULL, &request_info);
+      break;
+    }
+
+    if (root_token->type == JSMN_ARRAY && root_token->size < 1) {
+      jsmnrpc_create_error(jsmnrpc_err_invalid_request, NULL, &request_info);
+      break;
+    }
+
+    if (root_token->type == JSMN_ARRAY)
+    {
+      append_str_with_len(&request_data->response, "[", SIZE_MAX);
+      for (int i = 1; i < tokens->length; ++i) {
+        if (tokens->data[i].parent == root_token_id) {
+          jsmnrpc_handle_request_single(self, &request_info, i);
+        }
+      }
+      append_str_with_len(&request_data->response, "]", SIZE_MAX);
+      request_info.info_flags = jsmnrpc_response_is_array;
+    }
+    else
+    {
+      jsmnrpc_handle_request_single(self, &request_info, 0);
+    }
+  } while (0);
   if (request_data->response.capacity > 0)
   {
     if (request_data->response.length < request_data->response.capacity)

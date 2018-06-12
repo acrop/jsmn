@@ -506,6 +506,9 @@ std::string extract_str_param(ParamType param_name_or_pos, const std::string& re
   jsmnrpc_parse(&tokens, &str);
   int result_offset = -1;
   result_offset = extract_token_offset(&tokens, 0, param_name_or_pos);
+  if (result_offset < 0) {
+    return "undefined";
+  }
   jsmnrpc_string_t return_str = jsmnrpc_get_string(&tokens, result_offset);
   return std::string(return_str.data, return_str.length);
 }
@@ -548,22 +551,22 @@ int run_tests()
     TEST_COND_(extract_str_param("error", res_str) == "null"); // "error": null
     TEST_COND_(extract_str_param("id", res_str) == "22"); // "id": 22
     TEST_COND_(extract_int_param("id", res_str) == 22); // "id": 22
-    TEST_COND_(extract_str_param(3, res_str) == ""); // not existing.
+    TEST_COND_(extract_str_param(3, res_str) == "undefined"); // not existing.
 
     handle_request_for_example(5, req_data, rpc);
     TEST_COND_(req_data.response.length > 2);
     std::cout << "=====> " << extract_str_param("id", res_str);
-    TEST_COND_(extract_str_param("id", res_str) == "none"); // "id": none
+    TEST_COND_(extract_str_param("id", res_str) == "undefined"); // "id": undefined
 
     std::string error = extract_str_param("error", res_str);
-    TEST_COND_(extract_int_param("code", error) == -32600);
-    TEST_COND_(extract_str_param("message", res_str) == "Invalid Request");
+    TEST_COND_(extract_int_param("code", error) == -32700);
+    TEST_COND_(extract_str_param("message", error) == "Parse error");
 
     handle_request_for_example(16, req_data, rpc);
     TEST_COND_(req_data.response.length > 2);
     TEST_COND_(extract_str_param("jsonrpc", res_str) == "2.0"); // "jsonrpc": "2.0"
     error = extract_str_param("error", res_str);
-    TEST_COND_(extract_int_param("code", error) == -32600);
+    TEST_COND_(extract_int_param("code", error) == -32700);
 
     handle_request_for_example(9, req_data, rpc);
     TEST_COND_(req_data.response.length > 2);
