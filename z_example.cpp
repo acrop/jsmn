@@ -35,13 +35,16 @@ void getTimeDate(jsmnrpc_request_info_t* info)
   time_t curr_time;
   time(&curr_time);
   struct tm * now = localtime(&curr_time);
-  res << "\""
-    << (now->tm_year + 1900) << '-'
-    << (now->tm_mon + 1) << '-'
-    << now->tm_mday
-    << "\"";
-
-  return jsmnrpc_create_result(res.str().c_str(), info);
+  if (jsmnrpc_create_result_prefix(info))
+  {
+    char buffer[20];
+    jsmnrpc_string_t *response = &info->data->response;
+    append_str_with_len(response, "\"", SIZE_MAX);
+    append_str_with_len(response, i_to_str(now->tm_year + 1900, buffer), SIZE_MAX);
+    append_str_with_len(response, i_to_str(now->tm_mon + 1, buffer), SIZE_MAX);
+    append_str_with_len(response, i_to_str(now->tm_mday + 1, buffer), SIZE_MAX);
+    append_str_with_len(response, "\"", SIZE_MAX);
+  }
 }
 
 // uses named params
@@ -494,7 +497,7 @@ std::string extract_str_param(ParamType param_name_or_pos, const std::string& re
   std::vector<jsmntok_t> token_vector;
   jsmnrpc_string_t str;
   jsmnrpc_token_list_t tokens;
-  token_vector.resize(65536);
+  token_vector.resize(10000);
   str.length = (int)res_str.size();
   str.capacity = 0;
   str.data = (char*)res_str.data();

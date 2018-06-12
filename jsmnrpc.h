@@ -48,8 +48,8 @@ typedef struct jsmnrpc_string {
 typedef struct jsmnrpc_token_list {
   char* json;
   jsmntok_t* data;
-  int length;
-  int capacity;
+  jsmn_size_t length;
+  jsmn_size_t capacity;
   jsmn_parser parser;
 } jsmnrpc_token_list_t;
 
@@ -74,8 +74,8 @@ typedef struct jsmnrpc_data
 typedef struct jsmnrpc_request_info
 {
   jsmnrpc_data_t *data;
-  int32_t params_value_token;
-  int32_t id_value_token;
+  jsmn_size_t params_value_token;
+  jsmn_size_t id_value_token;
   uint16_t info_flags;
 } jsmnrpc_request_info_t;
 
@@ -127,10 +127,13 @@ enum jsmnrpc_20_errors
   jsmnrpc_err_count,                   /* JSON RPC 20 error count*/
 };
 
-enum jsmrpc_request_flags
+enum jsmrpc_flags
 {
   jsmnrpc_request_is_notification = 1,
-  jsmnrpc_request_is_rpc_20 = 2
+  jsmnrpc_request_is_rpc_20 = 2,
+  jsmnrpc_response_is_error = 4,
+  jsmnrpc_response_is_result = 8,
+  jsmnrpc_response_is_array = 16,
 };
 
 /* Exported functions ------------------------------------------------------- */

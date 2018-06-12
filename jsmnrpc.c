@@ -41,17 +41,17 @@ static const char* response_20_prefix = "{\"jsonrpc\": \"2.0\"";
 
 typedef struct jsmnrpc_error_code
 {
-  const char* error_code;
+  int error_code;
   const char* error_msg;
 } jsmnrpc_error_code_t;
 
 jsmnrpc_error_code_t jsmnrpc_err_codes[] =
 {
-  { "-32700", "Parse error" },   /* An error occurred on the server while parsing the JSON text */
-  { "-32600", "Invalid Request" },   /* The JSON sent is not a valid Request object */
-  { "-32601", "Method not found" },   /* The method does not exist / is not available */
-  { "-32602", "Invalid params" },   /* Invalid method parameter(s) */
-  { "-32603", "Internal error" }    /* Internal JSON-RPC error */
+  { -32700, "Parse error" },   /* An error occurred on the server while parsing the JSON text */
+  { -32600, "Invalid Request" },   /* The JSON sent is not a valid Request object */
+  { -32601, "Method not found" },   /* The method does not exist / is not available */
+  { -32602, "Invalid params" },   /* Invalid method parameter(s) */
+  { -32603, "Internal error" }    /* Internal JSON-RPC error */
 };
 
 enum jsmnrpc_key_ids
@@ -186,6 +186,10 @@ void jsmnrpc_handle_request_single(jsmnrpc_instance_t* self, jsmnrpc_request_inf
       int handler_id = jsmnrpc_get_handler_id(self, str);
       if (handler_id >= 0) {
         self->handlers[handler_id].handler(request_info);
+        if (request_info->info_flags & jsmnrpc_response_is_result)
+        {
+          append_str_with_len(&(request_info->data->response), "}", SIZE_MAX);
+        }
       }
       else
       {
@@ -206,7 +210,7 @@ bool jsmnrpc_parse(jsmnrpc_token_list_t* tokens, jsmnrpc_string_t *str)
     jsmn_init(&(tokens->parser));
     if (str) {
       tokens->json = str->data;
-      tokens->length = jsmn_parse(&(tokens->parser), str->data, str->length, tokens->data, tokens->capacity);
+      tokens->length = jsmn_parse(&(tokens->parser), str->data, (jsmn_size_t)str->length, tokens->data, tokens->capacity);
       return tokens->length > 0;
     }
   }
@@ -250,6 +254,7 @@ void jsmnrpc_handle_request(jsmnrpc_instance_t* self, jsmnrpc_data_t* request_da
       }
     }
     append_str_with_len(&request_data->response, "]", SIZE_MAX);
+    request_info.info_flags = jsmnrpc_response_is_array;
   }
   else
   {
@@ -260,10 +265,6 @@ void jsmnrpc_handle_request(jsmnrpc_instance_t* self, jsmnrpc_data_t* request_da
     if (request_data->response.length < request_data->response.capacity)
     {
       request_data->response.data[request_data->response.length] = 0;
-    }
-    else
-    {
-      request_data->response.data[request_data->response.capacity - 1] = 0;
     }
   }
 }
@@ -292,6 +293,8 @@ bool jsmnrpc_create_result_prefix(jsmnrpc_request_info_t* info)
       append_str_with_len(response, ", \"id\": ", SIZE_MAX);
       append_str(response, jsmnrpc_get_string(&info->data->tokens, info->id_value_token));
     }
+    append_str_with_len(response, ", \"result\": ", SIZE_MAX);
+    info->info_flags |= jsmnrpc_response_is_result;
     return true;
   }
   return false;
@@ -300,26 +303,29 @@ bool jsmnrpc_create_result_prefix(jsmnrpc_request_info_t* info)
 void jsmnrpc_create_result(const char* result_str, jsmnrpc_request_info_t* info)
 {
   if (jsmnrpc_create_result_prefix(info)) {
-    jsmnrpc_string_t *response = &info->data->response;
-    append_str_with_len(response, ", \"result\": ", SIZE_MAX);
-    append_str_with_len(response, result_str, SIZE_MAX);
-    append_str_with_len(response, "}", SIZE_MAX);
+    append_str_with_len(&info->data->response, result_str, SIZE_MAX);
   }
 }
 
 void jsmnrpc_create_error(int err, const char* err_msg, jsmnrpc_request_info_t* info)
 {
   char tmp_buffer[20];
-  const char*err_code = NULL;
+  int err_code = -1;
   jsmnrpc_string_t *response = &info->data->response;
   jsmnrpc_string_t *request = &info->data->request;
   if (err >= 0 && err < jsmnrpc_err_count) {
     err_code = jsmnrpc_err_codes[err].error_code;
     err_msg = jsmnrpc_err_codes[err].error_msg;
   }
-  if (err_code == NULL) {
-    err_code = i_to_str(err, tmp_buffer);
+  else if (err < 0)
+  {
+    err_code = err;
   }
+  else
+  {
+    err_code = -1;
+  }
+  info->info_flags |= jsmnrpc_response_is_error;
 
   if (response->length > 2) // not the beginning of a batch response
   {
@@ -328,6 +334,7 @@ void jsmnrpc_create_error(int err, const char* err_msg, jsmnrpc_request_info_t* 
 
   if (!(info->info_flags & jsmnrpc_request_is_notification))
   {
+  	const char*err_code_str = NULL;
     if (err == jsmnrpc_err_parse_error) {
       char *request_filterd = tmp_buffer;
       *request_filterd = 0;
@@ -355,7 +362,8 @@ void jsmnrpc_create_error(int err, const char* err_msg, jsmnrpc_request_info_t* 
     }
 
     append_str_with_len(response, "\"error\": {\"code\": ", SIZE_MAX);
-    append_str_with_len(response, err_code, SIZE_MAX);
+    err_code_str = i_to_str(err_code, tmp_buffer);
+    append_str_with_len(response, err_code_str, SIZE_MAX);
     append_str_with_len(response, ", \"message\": \"", SIZE_MAX);
     append_str_with_len(response, err_msg, SIZE_MAX);
     append_str_with_len(response, "\"}", SIZE_MAX);
@@ -472,7 +480,7 @@ void append_str_with_len(jsmnrpc_string_t *str, const char* from, size_t len)
     len = str_len(from);
   }
   str->length += len;
-  if (str->length < str->capacity) {
+  if (str->length <= str->capacity) {
     for (int i = 0; i < len; ++i) {
       str->data[saved_len + i] = from[i];
     }
