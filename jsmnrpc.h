@@ -63,6 +63,7 @@ typedef struct jsmnrpc_data
   jsmnrpc_string_t response;
   jsmnrpc_token_list_t tokens;
   void*       arg;
+  uint16_t info_flags;
 } jsmnrpc_data_t;
 
 /**

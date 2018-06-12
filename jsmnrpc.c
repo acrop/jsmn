@@ -232,16 +232,19 @@ void jsmnrpc_handle_request(jsmnrpc_instance_t* self, jsmnrpc_data_t* request_da
 
   if (!jsmnrpc_parse(tokens, request)) {
     jsmnrpc_create_error(jsmnrpc_err_parse_error, NULL, &request_info);
+    request_data->info_flags = request_info.info_flags;
     return;
   }
 
   if (root_token->type != JSMN_ARRAY && root_token->type != JSMN_OBJECT) {
     jsmnrpc_create_error(jsmnrpc_err_invalid_request, NULL, &request_info);
+    request_data->info_flags = request_info.info_flags;
     return;
   }
 
   if (root_token->type == JSMN_ARRAY && root_token->size < 1) {
     jsmnrpc_create_error(jsmnrpc_err_invalid_request, NULL, &request_info);
+    request_data->info_flags = request_info.info_flags;
     return;
   }
 
@@ -267,6 +270,7 @@ void jsmnrpc_handle_request(jsmnrpc_instance_t* self, jsmnrpc_data_t* request_da
       request_data->response.data[request_data->response.length] = 0;
     }
   }
+  request_data->info_flags = request_info.info_flags;
 }
 
 bool jsmnrpc_create_result_prefix(jsmnrpc_request_info_t* info)
